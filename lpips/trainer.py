@@ -3,7 +3,6 @@ from __future__ import absolute_import
 
 import numpy as np
 import torch
-from torch import nn
 from collections import OrderedDict
 from torch.autograd import Variable
 from scipy.ndimage import zoom
@@ -46,16 +45,16 @@ class Trainer():
         self.model_name = '%s [%s]'%(model,net)
 
         if(self.model == 'lpips'): # pretrained net + linear layer
-            self.net = lpips.LPIPS(pretrained=not is_train, net=net, version=version, lpips=True, spatial=spatial, 
-                pnet_rand=pnet_rand, pnet_tune=pnet_tune, 
-                use_dropout=True, model_path=model_path, eval_mode=False)
+            self.net = lpips.LPIPS(pretrained=not is_train, net=net, version=version, lpips=True, spatial=spatial,
+                                   pnet_rand=pnet_rand, pnet_tune=pnet_tune,
+                                   use_dropout=True, model_path=model_path, eval_mode=False)
         elif(self.model=='baseline'): # pretrained network
             self.net = lpips.LPIPS(pnet_rand=pnet_rand, net=net, lpips=False)
         elif(self.model in ['L2','l2']):
-            self.net = lpips.L2(use_gpu=use_gpu,colorspace=colorspace) # not really a network, only for testing
+            self.net = lpips.L2(use_gpu=use_gpu, colorspace=colorspace) # not really a network, only for testing
             self.model_name = 'L2'
         elif(self.model in ['DSSIM','dssim','SSIM','ssim']):
-            self.net = lpips.DSSIM(use_gpu=use_gpu,colorspace=colorspace)
+            self.net = lpips.DSSIM(use_gpu=use_gpu, colorspace=colorspace)
             self.model_name = 'SSIM'
         else:
             raise ValueError("Model [%s] not recognized." % self.model)
@@ -275,6 +274,6 @@ def score_jnd_dataset(data_loader, func, name=''):
 
     precs = TPs/(TPs+FPs)
     recs = TPs/(TPs+FNs)
-    score = lpips.voc_ap(recs,precs)
+    score = lpips.voc_ap(recs, precs)
 
     return(score, dict(ds=ds,sames=sames))
