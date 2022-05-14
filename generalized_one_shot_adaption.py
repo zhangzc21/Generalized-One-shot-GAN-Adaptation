@@ -368,11 +368,11 @@ def test_function(config):
     for w, source_image, stylized_image, stylized_image_full, name in zip(ws, source_images, stylized_images, stylized_images_full, names):
         # utils.save_image(image.unsqueeze(0), os.path.join(config.out_dir, 'test', name + '.jpg'),
         #                  nrow = 1, range = '-1,1')
-        common_utils.save_image(source_image.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'.jpg'),
+        common_utils.save_image(source_image.unsqueeze(0), os.path.join(config.out_dir, 'test', name + f'.jpg'),
                                 nrow = 1, range = '-1,1')
         # common_utils.save_image(stylized_image.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'_stylized{alpha}.jpg'),
         #                         nrow = 1, range = '-1,1')
-        common_utils.save_image(stylized_image_full.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'_stylized_full{alpha}.jpg'),
+        common_utils.save_image(stylized_image_full.unsqueeze(0), os.path.join(config.out_dir, 'test', name + f'_stylized.jpg'),
                                 nrow = 1, range = '-1,1')
         # domain_adaption.semantic_manipulation(w.unsqueeze(0), name)
 if __name__ == '__main__':

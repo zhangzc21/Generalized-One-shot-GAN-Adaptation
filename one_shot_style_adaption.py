@@ -1,6 +1,5 @@
 from PIL import Image
 import os
-from PIL import Image
 import pickle as pkl
 from tqdm import tqdm
 from latent_projector import ensemble_projector
@@ -8,7 +7,7 @@ import cv2
 import lpips
 import copy
 from training.loss import CLIPLoss
-from einops import rearrange
+# from einops import rearrange
 from inversion_networks_utils import *
 from SSIM import MS_SSIM
 from termcolor import cprint
@@ -55,16 +54,7 @@ class DomainAdaption():
         names = []
         common_utils.make_dir('inversion_out/latent_code')  # latent code dir
 
-        if isinstance(image_paths, str):
-            if os.path.isdir(image_paths):
-                import PIL
-                _all_fnames = [os.path.join(root, fname) for root, _dirs, files in os.walk(image_paths) for fname in
-                               files]
-                PIL.Image.init()
-                image_paths = sorted(
-                    fname for fname in _all_fnames if os.path.splitext(fname)[1].lower() in PIL.Image.EXTENSION)
-            elif os.path.exists(image_paths):
-                image_paths = [image_paths]
+        image_paths = common_utils.load_image_paths(image_paths)
 
         assert isinstance(image_paths, list)
 
@@ -73,8 +63,6 @@ class DomainAdaption():
             image = self.read_image(image_path)
             image = common_utils.resize(image, (self.G.img_resolution, self.G.img_resolution))
             save_path = f'inversion_out/latent_code/{image_name}_w.pkl'
-            label_path = os.path.join(config.mask_dir,
-                                      os.path.basename(image_path).replace('.png', '_mask.png'))
             if os.path.exists(save_path):
                 w = torch.load(save_path)
             else:
@@ -87,18 +75,7 @@ class DomainAdaption():
             images.append(image)
             ws.append(w)
             names.append(image_name)
-
-            if not os.path.exists(label_path) or not use_mask:
-                mask_label = torch.zeros_like(image)[:, [0], ...]
-                print('no pre-defined mask, using zeros mask')
-            else:
-                print(f'use pre-defined mask: {label_path}')
-                mask_label = common_utils.read_image(label_path).to(image.device)
-                mask_label = (mask_label + 1) / 2
-                mask_label = mask_label[:, [0], ...]
-                mask_label = common_utils.resize(mask_label, (self.G.img_resolution, self.G.img_resolution))
-                mask_label[mask_label > 0.5] = 1
-                mask_label[mask_label <= 0.5] = 0
+            mask_label = torch.zeros_like(image)[:, [0], ...]
             masks.append(mask_label)
 
             if flip_aug:
@@ -118,6 +95,7 @@ class DomainAdaption():
                 ws.append(w_flip)
                 masks.append(torch.flip(mask_label, dims = [-1]))
                 names.append(image_name + '_flip')
+
         if return_name:
             return ws, images, masks, names
         else:
@@ -131,13 +109,13 @@ class DomainAdaption():
             w_samples = self.G.mapping(torch.from_numpy(z_samples).to(config.device), **config.mapping_kwargs)
             ws_lerp = []
 
-            for i in range(linspace_num, 0, -1):
-                if w is None:
-                    w = w_samples[[0]]
-                w_lerp = lerp(w.repeat(linspace_num, 1, 1), w_samples[:5], i / linspace_num)
-                ws_lerp.append(w_lerp)
-            ws_lerp = rearrange(ws_lerp, 'a b c d -> (b a) c d', a = len(ws_lerp), b = w_lerp.shape[0],
-                                c = w_lerp.shape[1], d = w_lerp.shape[2])
+            # for i in range(linspace_num, 0, -1):
+            #     if w is None:
+            #         w = w_samples[[0]]
+            #     w_lerp = lerp(w.repeat(linspace_num, 1, 1), w_samples[:5], i / linspace_num)
+            #     ws_lerp.append(w_lerp)
+            # ws_lerp = rearrange(ws_lerp, 'a b c d -> (b a) c d', a = len(ws_lerp), b = w_lerp.shape[0],
+            #                     c = w_lerp.shape[1], d = w_lerp.shape[2])
         return w_samples, ws_lerp
         ### init test latent code ####################################################################
 
@@ -296,29 +274,6 @@ class DomainAdaption():
                 images = torch.cat([old_image, new_image], dim = 0)
                 common_utils.save_image(images, config.out_dir + f'/manipulation/{name}_{direction}_{i}.jpg')
                 i += 1
-
-
-import matplotlib.pyplot as plt
-
-
-def plot_syn_images(syn_images):
-    import pathlib
-    fig_dir = pathlib.Path('fig')
-    fig_dir.mkdir(exist_ok = True)
-    import time
-    for i, img in enumerate(syn_images):
-        img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8).detach().cpu().numpy()[0]
-        plt.axis('off')
-        resized_image = Image.fromarray(img, mode = 'RGB').resize((256, 256))
-        plt.imshow(resized_image)
-        plt.show()
-        t = time.time()
-        ts = time.strftime('%Y-%m-%d %H-%M-%s', time.localtime(t))
-        plt.savefig(f'{fig_dir}/{ts}.png')
-        del img
-        del resized_image
-        torch.cuda.empty_cache()
-
 
 def train_function(config):
     if isinstance(config.image_path, str):
