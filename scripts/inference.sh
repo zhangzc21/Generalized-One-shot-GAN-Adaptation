@@ -1,6 +1,11 @@
-test_image='' # path to the real image that will be inverted by e4e
-out_dir=''  # save dir
-adapted_model='' # path to adapted model
+############################################
+##############MUST BE DEFINED###############
+adapted_model='adapted_models/disney.pkl' # path to adapted model
+############################################
+##############alternative###################
+test_image='alternative' # path or dir to the real images that will be inverted by e4e
+out_dir='alternative'  # save dir
+############################################
 
 python inference.py \
 --test_image $test_image \
