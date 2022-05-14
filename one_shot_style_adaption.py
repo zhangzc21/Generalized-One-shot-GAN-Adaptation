@@ -73,7 +73,7 @@ class DomainAdaption():
             image = self.read_image(image_path)
             image = common_utils.resize(image, (self.G.img_resolution, self.G.img_resolution))
             save_path = f'inversion_out/latent_code/{image_name}_w.pkl'
-            label_path = os.path.join('data\style_images_aligned_mask',
+            label_path = os.path.join(config.mask_dir,
                                       os.path.basename(image_path).replace('.png', '_mask.png'))
             if os.path.exists(save_path):
                 w = torch.load(save_path)
@@ -348,7 +348,7 @@ def train_function(config):
 def test_function(config):
     domain_adaption = DomainAdaption(config.pretrained_model)
     domain_adaption.load_target_model(config.out_dir + '/G_target.pkl')
-    ws, images, masks, names = domain_adaption.dataloader(config.test_image_path, flip_aug = True,
+    ws, images, masks, names = domain_adaption.dataloader(config.test_image_path, flip_aug = False,
                                                           use_mask = config.use_mask, return_name = True,
                                                           e4e_model = config.e4e_model)
     ws = torch.cat(ws, dim = 0)
@@ -367,36 +367,31 @@ def test_function(config):
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    source_G = {'face1024': 'F:/GITHUB/stylegan3/pretrained_models/ffhq.pkl',
-                'cat512': r'D:\github\stylegan3\pretrained\stylegan2-afhqcat-512x512.pkl',
-                'dog512': r'D:\github\stylegan3\pretrained\stylegan2-afhqdog-512x512.pkl',
-                'church256': r'pretrained_models/stylegan2-church-config-f.pkl'}
     parser = ArgumentParser()
 
-    parser.add_argument('--image_path', default = r'data/style_images_aligned_2/arcane_jayce.png',
+    parser = ArgumentParser()
+
+    parser.add_argument('--image_path', required = True,
                         type = str)
-    parser.add_argument('--test_image_path', default = r'D:\NIPS_2022\faces_of_celebrities_aligned',
+    parser.add_argument('--out_dir', type = str, required = True)
+    parser.add_argument('--pretrained_model', type = str, required = True)
+    parser.add_argument('--test_image_path', default = r'',
                         type = str)
-    parser.add_argument('--out_dir', type = str, default = r'D:\One-shot-Adaption-out')
-    parser.add_argument('--pretrained_model', type = str, default = r'F:\GITHUB\stylegan3\pretrained_models\ffhq.pkl',
-                        help = 'path of stylegan pkl file')
-    parser.add_argument('--total_step', type = int, default = 600, help = 'total optimization step')
+    parser.add_argument('--total_step', type = int, default = 600)
     parser.add_argument('--exp_name', type = str, default = 'test')
     parser.add_argument('--device', type = str, default = 'cuda:0')
-    parser.add_argument('--batch', type = int, default = 1)
 
+    parser.add_argument('--batch', type = int, default = 1)
     parser.add_argument('--lpips_weight', type = float, default = 1, help = 'weight of lpips')
     parser.add_argument('--reg_weight', type = float, default = 1, help = 'weight of regularization')
-    parser.add_argument('--style_weight', type = float, default = 3)
-    parser.add_argument('--dis_weight', type = int, default = 0)
+    parser.add_argument('--style_weight', type = float, default = 0.2)
     parser.add_argument('--source_domain', type = str, default = 'face')
-
     parser.add_argument('--flip_aug', type = bool, default = False)
     parser.add_argument('--use_mask', type = bool, default = False)
     parser.add_argument('--fix_style', type = bool, default = False)
     parser.add_argument('--vgg_feature_num', type = int, default = 2)
     parser.add_argument('--index', type = int, default = 8)
-    parser.add_argument('--e4e_model', type= str, default = None)
+    parser.add_argument('--e4e_model', type = str, default = None)
     parser.add_argument('--use_wandb', type = bool, default = False)
 
     opt = parser.parse_args()

@@ -55,7 +55,6 @@ class DomainAdaption():
         masks = []
         names = []
         common_utils.make_dir('inversion_out/latent_code')  # latent code dir
-
         image_paths = common_utils.load_image_paths(image_paths)
         assert isinstance(image_paths, list)
 
@@ -64,7 +63,7 @@ class DomainAdaption():
             image = self.read_image(image_path)
             image = common_utils.resize(image, (self.G.img_resolution, self.G.img_resolution))
             save_path = f'inversion_out/latent_code/{image_name}_w.pkl'
-            label_path = os.path.join('data\paper_attribute_mask',
+            label_path = os.path.join(config.mask_dir,
                                       os.path.basename(image_path).split('.')[0]+ '_mask.png')
             if not os.path.exists(label_path):
                 mask_label = torch.zeros_like(image)[:, [0], ...]
@@ -360,69 +359,45 @@ def test_function(config):
     domain_adaption = DomainAdaption(config.pretrained_model)
     domain_adaption.load_target_model(config.out_dir + '/G_target.pkl')
     config.test_image_path = [config.image_path, config.test_image_path]
-    ws, images, masks, names = domain_adaption.dataloader(config.test_image_path, flip_aug = True, use_mask = config.use_mask, return_name = True, e4e_model = config.e4e_model)
-    # ws_, _ = domain_adaption.generate_test_latent(None, sample_num = 1000, linspace_num = 5)
-    # ws = ws[:4]
-    # ws.append(torch.cat([ws[0][:,:8,...],ws[2][:,8:,...]], dim = 1))
-    # for i, w in enumerate(ws):
-    #     ws[i] = torch.cat([ws[i][:,:8,...],ws_[277].unsqueeze(0)[:,8:,...]], dim = 1)
+    ws, images, masks, names = domain_adaption.dataloader(config.test_image_path, flip_aug = False, use_mask = config.use_mask, return_name = True, e4e_model = config.e4e_model)
     ws = torch.cat(ws, dim = 0)
-
     images = torch.cat(images, dim = 0)
-
-    # stylized_images_full, stylized_images, _, _ = domain_adaption.G_target.synthesis_aux_forward_slowly(
-    #     ws, **config.synthesis_kwargs)
-    # for w, image, stylized_image, stylized_image_full, name in zip(ws, images, stylized_images, stylized_images_full, names):
-    #     utils.save_image(image.unsqueeze(0), os.path.join(config.out_dir, 'test', name + '.jpg'),
-    #                      nrow = 1, range = '-1,1')
-    #     utils.save_image(stylized_image.unsqueeze(0), os.path.join(config.out_dir, 'test', name + '_stylized.jpg'),
-    #                      nrow = 1, range = '-1,1')
-    #     utils.save_image(stylized_image_full.unsqueeze(0), os.path.join(config.out_dir, 'test', name + '_stylizedfull.jpg'),
-    #                      nrow = 1, range = '-1,1')
-    #     # domain_adaption.semantic_manipulation(w.unsqueeze(0), name)
-    # ws, _ = domain_adaption.generate_test_latent(None, sample_num = 16, linspace_num = 5)
-    # images = slowly_forward(domain_adaption.G.synthesis, ws, noise_mode = 'const', force_fp32 = True)
-    # ws, _ = domain_adaption.generate_test_latent(None, sample_num = 16, linspace_num = 5)
-    # names = [str(i) for i in range(len(ws))]
-
-    for alpha in [0]:
-        stylized_images_full, stylized_images, _, _ = domain_adaption.G_target.synthesis_aux_forward_slowly(
-            ws, alpha = alpha, **config.synthesis_kwargs)
-        source_images = slowly_forward(domain_adaption.G.synthesis, ws, noise_mode = 'const', force_fp32 = True)
-        for w, source_image, stylized_image, stylized_image_full, name in zip(ws, source_images, stylized_images, stylized_images_full, names):
-            # utils.save_image(image.unsqueeze(0), os.path.join(config.out_dir, 'test', name + '.jpg'),
-            #                  nrow = 1, range = '-1,1')
-            common_utils.save_image(source_image.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'.jpg'),
-                                    nrow = 1, range = '-1,1')
-            common_utils.save_image(stylized_image.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'_stylized{alpha}.jpg'),
-                                    nrow = 1, range = '-1,1')
-            common_utils.save_image(stylized_image_full.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'_stylized_full{alpha}.jpg'),
-                                    nrow = 1, range = '-1,1')
-            # domain_adaption.semantic_manipulation(w.unsqueeze(0), name)
+    stylized_images_full, stylized_images, _, _ = domain_adaption.G_target.synthesis_aux_forward_slowly(
+        ws, alpha = 0, **config.synthesis_kwargs)
+    source_images = slowly_forward(domain_adaption.G.synthesis, ws, noise_mode = 'const', force_fp32 = True)
+    for w, source_image, stylized_image, stylized_image_full, name in zip(ws, source_images, stylized_images, stylized_images_full, names):
+        # utils.save_image(image.unsqueeze(0), os.path.join(config.out_dir, 'test', name + '.jpg'),
+        #                  nrow = 1, range = '-1,1')
+        common_utils.save_image(source_image.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'.jpg'),
+                                nrow = 1, range = '-1,1')
+        # common_utils.save_image(stylized_image.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'_stylized{alpha}.jpg'),
+        #                         nrow = 1, range = '-1,1')
+        common_utils.save_image(stylized_image_full.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'_stylized_full{alpha}.jpg'),
+                                nrow = 1, range = '-1,1')
+        # domain_adaption.semantic_manipulation(w.unsqueeze(0), name)
 if __name__ == '__main__':
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
 
-    parser.add_argument('--image_path', default = r'data/style_images_aligned_2/arcane_jayce.png',
+    parser.add_argument('--image_path', required = True,
                         type = str)
-    parser.add_argument('--test_image_path', default = r'D:\NIPS_2022\faces_of_celebrities_aligned',
+    parser.add_argument('--mask_dir', required = True,
                         type = str)
-    parser.add_argument('--out_dir', type = str, default = r'D:\One-shot-Adaption-out')
-    parser.add_argument('--pretrained_model', type = str, default = r'F:\GITHUB\stylegan3\pretrained_models\ffhq.pkl',
-                        help = 'path of stylegan pkl file')
-    parser.add_argument('--total_step', type = int, default = 600, help = 'total optimization step')
+    parser.add_argument('--out_dir', type = str, required = True)
+    parser.add_argument('--pretrained_model', type = str, required = True)
+    parser.add_argument('--test_image_path', default = r'',
+                        type = str)
+    parser.add_argument('--total_step', type = int, default = 600)
     parser.add_argument('--exp_name', type = str, default = 'test')
     parser.add_argument('--device', type = str, default = 'cuda:0')
-    parser.add_argument('--batch', type = int, default = 1)
 
+    parser.add_argument('--batch', type = int, default = 1)
     parser.add_argument('--lpips_weight', type = float, default = 1, help = 'weight of lpips')
     parser.add_argument('--reg_weight', type = float, default = 1, help = 'weight of regularization')
     parser.add_argument('--entity_weight', type = float, default = 1)
     parser.add_argument('--style_weight', type = float, default = 0.2)
-    parser.add_argument('--dis_weight', type = int, default = 0)
     parser.add_argument('--source_domain', type = str, default = 'face')
-
     parser.add_argument('--flip_aug', type = bool, default = False)
     parser.add_argument('--use_mask', type = bool, default = False)
     parser.add_argument('--fix_style', type = bool, default = False)
