@@ -1,4 +1,4 @@
-# Generalized-One-shot-GAN-Adaption
+# Pytorch implementation of Generalized-One-shot-GAN-Adaption
 ## 1. Quick start
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1A6moUzSLh2vU4CckfnXESk4HwYC8NgMz?usp=sharing)
 
