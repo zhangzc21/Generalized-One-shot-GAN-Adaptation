@@ -237,23 +237,18 @@ class CLIPLoss(torch.nn.Module):
         self.source_fixed_feature = None
         self.target_fixed_feature = None
 
-    def kl_loss(self, source_fixed, source_sample, target_fixed, target_sample, return_clip_loss = False):
-        with torch.no_grad():
-            source_sample_feature = self.encoder(source_sample)
-            source_fixed_feature = self.encoder(source_fixed)
-            target_fixed_feature = self.encoder(target_fixed)
-        target_sample_feature = self.encoder(target_sample)
-        source_dist = torch.cosine_similarity(source_sample_feature,
-                                              source_fixed_feature.expand_as(source_sample_feature))
-        target_dist = torch.cosine_similarity(target_sample_feature,
-                                              target_fixed_feature.expand_as(target_sample_feature))
-        kl_loss = F.kl_div(F.log_softmax(target_dist, dim = -1), F.softmax(source_dist, dim = -1), reduction = 'mean')
-
-        if return_clip_loss:
-            d_ref = target_fixed_feature - source_fixed_feature
-            d = target_sample_feature - source_sample_feature
-            clip_loss = torch.mean(1 - F.cosine_similarity(d, d_ref.expand_as(d), eps = 1e-6))
-        return kl_loss, clip_loss
+    def simple_VLapR(self, source_sample, target_sample, L, normalize = False):
+        source_feature = self.encoder(source_sample)
+        target_feature = self.encoder(target_sample)
+        if normalize:
+            target_feature = F.normalize(target_feature, p = 2, dim = -1)
+            source_feature = F.normalize(source_feature, p = 2, dim = -1)
+        N = len(source_feature)
+        L = L.to(torch.float16)
+        diff = target_feature - source_feature
+        M = ((diff.permute(1, 0)) @ L) @ diff
+        loss = torch.trace(M)
+        return loss / ((N ** 2 - N) * target_feature.shape[-1])
 
     def feature_forward(self, image_feature1, image_feature2):
         similarity = 1 - F.cosine_similarity(image_feature1, image_feature2, eps = 1e-6)
@@ -292,3 +287,16 @@ class CLIPLoss(torch.nn.Module):
     def rec_loss(self, image1, image2):
         d_similarity = 1 - F.cosine_similarity(self.encoder(image1), self.encoder(image2), eps = 1e-6)
         return d_similarity
+
+    def laplacian(self, ws, normalize = True):
+        if normalize:
+            eye = torch.eye(len(ws)).to(ws.device)
+            W = torch.exp(-(ws.unsqueeze(1) - ws.unsqueeze(0)).norm(dim = -1, p = 2) / 128) - eye
+            W = torch.from_numpy(np.around(W.cpu().numpy(), decimals = 4)).to(W.device)
+            sqrt_D = torch.diag(torch.sum(W, dim = -1).pow(-0.5))
+            L = eye - sqrt_D @ W @ sqrt_D
+        else:
+            W = torch.exp(-(ws.unsqueeze(1) - ws.unsqueeze(0)).norm(dim = -1, p = 2) / 128)
+            D = torch.diag(torch.sum(W, dim = -1))
+            L = D - W
+        return L
