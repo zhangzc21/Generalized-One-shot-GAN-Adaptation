@@ -190,20 +190,33 @@ def get_noise_bufs(G, mode = 'stylegan3'):
         noise_bufs = []
     return noise_bufs
 
-def laplacian(ws, normalize = True):
+def laplacian(ws, normalize = False):
     if normalize:
         eye = torch.eye(len(ws)).to(ws.device)
         W = torch.exp(-(ws.unsqueeze(1) - ws.unsqueeze(0)).norm(dim = -1, p = 2) / 128) - eye
-        W = torch.from_numpy(np.around(W.cpu().numpy(),decimals = 4)).to(W.device)
         sqrt_D = torch.diag(torch.sum(W, dim = -1).pow(-0.5))
         L = eye - sqrt_D @ W @ sqrt_D
     else:
-        eye = torch.eye(len(ws)).to(ws.device)
-        W = torch.exp(-(ws.unsqueeze(1) - ws.unsqueeze(0)).norm(dim = -1, p = 2) / 128) - eye
-        W = torch.from_numpy(np.around(W.cpu().numpy(),decimals = 4)).to(W.device)
+        W = torch.exp(-(ws.unsqueeze(1) - ws.unsqueeze(0)).norm(dim = -1, p = 2) / 128)
         D = torch.diag(torch.sum(W, dim = -1))
         L = D - W
     return L
+
+
+# def laplacian(ws, normalize = False):
+#     if normalize:
+#         eye = torch.eye(len(ws)).to(ws.device)
+#         W = torch.exp(-(ws.unsqueeze(1) - ws.unsqueeze(0)).norm(dim = -1, p = 2) / 128) - eye
+#         W = torch.from_numpy(np.around(W.cpu().numpy(),decimals = 4)).to(W.device)
+#         sqrt_D = torch.diag(torch.sum(W, dim = -1).pow(-0.5))
+#         L = eye - sqrt_D @ W @ sqrt_D
+#     else:
+#         eye = torch.eye(len(ws)).to(ws.device)
+#         W = torch.exp(-(ws.unsqueeze(1) - ws.unsqueeze(0)).norm(dim = -1, p = 2) / 128) - eye
+#         W = torch.from_numpy(np.around(W.cpu().numpy(),decimals = 4)).to(W.device)
+#         D = torch.diag(torch.sum(W, dim = -1))
+#         L = D - W
+#     return L
 
 class Slicing_torch(torch.nn.Module):
     def __init__(self, repeat_rate = 1, num_slice = 36, resize = None):
