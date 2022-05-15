@@ -7,5 +7,5 @@ We provide some [pre-trained models](https://drive.google.com/drive/folders/1xgB
 ## 2. Usage
 -  Please refer to the colab to create the envs and download the source models, it mainly includes [StyleGAN](https://github.com/NVlabs/stylegan3) and [CLIP](https://github.com/openai/CLIP) dependencies, and some commonly used packages like cv2.
 - We have prepared the scripts to train new models 
-  -  For training model without entites, ```sh scripts/train_OSGA.sh```
-  -  For training model with entites, ```sh scripts/train_GOGA.sh```
+  -  For training model without entities, ```sh scripts/train_OSGA.sh```
+  -  For training model with entities, ```sh scripts/train_GOGA.sh```
