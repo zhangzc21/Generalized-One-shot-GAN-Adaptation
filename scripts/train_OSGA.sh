@@ -7,7 +7,7 @@ out_dir="Results" # dir to save results
 test_image_path="test_data/real_images"
 ############################################
 
-python one_shot_style_adaption.py --exp_name test \
+python one_shot_style_adaption.py --exp_name test_lap \
 --image_path $image_path \
 --out_dir $out_dir \
 --test_image_path $test_image_path \
