@@ -392,7 +392,7 @@ if __name__ == '__main__':
     parser.add_argument('--index', type = int, default = 8)
     parser.add_argument('--e4e_model', type = str, default = None)
     parser.add_argument('--use_wandb', type = bool, default = False)
-    common_utils.seed_all(4)
+    common_utils.seed_all(1)
     opt = parser.parse_args()
     config = vars(opt)
     config = common_utils.EasyDict(**config)
