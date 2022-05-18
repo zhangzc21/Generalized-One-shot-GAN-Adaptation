@@ -263,12 +263,12 @@ def show(img):
     plt.show()
 
 
-def seed_all(seed, dedeterministic = False):
+def seed_all(seed, deterministic = False):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    if dedeterministic:
+    if deterministic:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
@@ -282,11 +282,15 @@ def load_image_paths(image_paths):
                     fname for fname in _all_fnames if os.path.splitext(fname)[1].lower() in PIL.Image.EXTENSION)
             elif os.path.exists(image_paths):
                 image_paths = [image_paths]
+            else:
+                return
             return_paths += image_paths
         elif isinstance(image_paths, list):
             for image_path in image_paths:
                 recursive(image_path, return_paths)
 
     return_paths = []
+    # import pdb;
+    # pdb.set_trace()
     recursive(image_paths, return_paths)
     return return_paths

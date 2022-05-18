@@ -178,11 +178,11 @@ class DomainAdaption():
         self.clip_loss = CLIPLoss(device = device)
         self.ssim_loss = MS_SSIM(window_size = 11, window_sigma = 1.5, data_range = 1.0, channel = 3).to(device)
         self.lpips_loss = lpips.LPIPS(net = 'vgg').to(device).eval()
-        with torch.no_grad():
-            real_style_lpips_feats = self.lpips_loss.get_feature(common_utils.downsample(real_styles, (256, 256)))[
-                                     -config.vgg_feature_num:]
-            real_aux_lpips_feats = self.lpips_loss.get_feature(
-                common_utils.downsample(real_styles * mask_labels, (256, 256)))
+        # with torch.no_grad():
+        #     real_style_lpips_feats = self.lpips_loss.get_feature(common_utils.downsample(real_styles, (256, 256)))[
+        #                              -config.vgg_feature_num:]
+        #     real_aux_lpips_feats = self.lpips_loss.get_feature(
+        #         common_utils.downsample(real_styles * mask_labels, (256, 256)))
         self.color_loss = Slicing_torch(num_slice = 256).to(device)
         self.outlier_loss = Slicing_torch(num_slice = 256).to(device)
         ### END: Define Loss ###########################################################################
@@ -201,8 +201,6 @@ class DomainAdaption():
             real_content = real_contents[rand, ...]
             real_style = real_styles[rand, ...]
             mask_label = mask_labels[rand, ...]
-            # real_style_lpips_feat = [f[rand, ...] for f in real_style_lpips_feats]
-            # real_aux_lpips_feat = [f[rand, ...] for f in real_aux_lpips_feats]
 
             ### begin optimize generator ###
             optimizer_G.zero_grad()
@@ -228,30 +226,23 @@ class DomainAdaption():
             synth_aux_lpips_feat = self.lpips_loss.get_feature(
                 common_utils.adaptive_pool(synth_style_aux, (256, 256)))
 
-            ### aug ##############
-            # output_fake = self.D(rec_style_full, return_feat = False)
-            # dis_loss = gan_loss(output_fake, None, dis_flag = False, type = gan_loss_type)
-            # mask_binary_reg = torch.mean(0.25 - torch.square(torch.cat([rec_mask]) - 0.5))
             mask_hint_reg = F.mse_loss(rec_mask, mask_label)
 
-            rec_style_lpips_feat = [f.detach() for f in rec_style_lpips_feat]
+            # rec_style_lpips_feat = [f.detach() for f in rec_style_lpips_feat]
             self.color_loss.update_slices(rec_style_lpips_feat)
             style_loss = self.color_loss(list(syn_style_lpips_feat))
 
-            rec_aux_lpips_feat = [f.detach() for f in rec_aux_lpips_feat]
+            # rec_aux_lpips_feat = [f.detach() for f in rec_aux_lpips_feat]
             self.outlier_loss.update_slices(rec_aux_lpips_feat[:4])
             entity_loss = self.outlier_loss(list(synth_aux_lpips_feat)[:4])
 
             lapReg = self.clip_loss.VLapR(real_content, synth_content, rec_style_full,
                                           synth_style_full, lap)
-            # lapReg1 = self.clip_loss.VLapR(real_content, synth_content, rec_style,
-            #                               synth_style, lap)
             ssim_loss = (1 - self.ssim_loss(common_utils.denorm(rec_style_full), common_utils.denorm(real_style))).mean()
             lpips_loss = self.lpips_loss(common_utils.resize(rec_style_full, (256, 256)),
                                          common_utils.resize(real_style, (256, 256))).mean()
-            # dis_rec_loss = sum([F.l1_loss(a, b) for a, b in zip(real_style_dis_feat, rec_style_full_dis_feat)])/len(rec_style_full_dis_feat)
             loss = config.lpips_weight * (
-                    lpips_loss + ssim_loss + 100 * mask_hint_reg) + config.style_weight * style_loss + config.entity_weight * entity_loss + config.reg_weight * lapReg #  + dis_loss
+                    lpips_loss + ssim_loss + 10 * mask_hint_reg) + config.style_weight * style_loss + config.entity_weight * entity_loss + config.reg_weight * lapReg #  + dis_loss
             loss.backward()
             optimizer_G.step()
             scheduler.step(epoch = step_idx)
@@ -366,15 +357,11 @@ def test_function(config):
         ws, alpha = 0, **config.synthesis_kwargs)
     source_images = slowly_forward(domain_adaption.G.synthesis, ws, noise_mode = 'const', force_fp32 = True)
     for w, source_image, stylized_image, stylized_image_full, name in zip(ws, source_images, stylized_images, stylized_images_full, names):
-        # utils.save_image(image.unsqueeze(0), os.path.join(config.out_dir, 'test', name + '.jpg'),
-        #                  nrow = 1, range = '-1,1')
         common_utils.save_image(source_image.unsqueeze(0), os.path.join(config.out_dir, 'test', name + f'.jpg'),
                                 nrow = 1, range = '-1,1')
-        # common_utils.save_image(stylized_image.unsqueeze(0), os.path.join(config.out_dir, 'test__', name + f'_stylized{alpha}.jpg'),
-        #                         nrow = 1, range = '-1,1')
         common_utils.save_image(stylized_image_full.unsqueeze(0), os.path.join(config.out_dir, 'test', name + f'_stylized.jpg'),
                                 nrow = 1, range = '-1,1')
-        # domain_adaption.semantic_manipulation(w.unsqueeze(0), name)
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
 
@@ -405,7 +392,7 @@ if __name__ == '__main__':
     parser.add_argument('--index', type = int, default = 8)
     parser.add_argument('--e4e_model', type = str, default = None)
     parser.add_argument('--use_wandb', type = bool, default = False)
-
+    common_utils.seed_all(4)
     opt = parser.parse_args()
     config = vars(opt)
     config = common_utils.EasyDict(**config)

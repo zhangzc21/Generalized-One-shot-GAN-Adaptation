@@ -187,9 +187,7 @@ class DomainAdaption():
             w = ws[rand, ...]
             real_content = real_contents[rand, ...]
             real_style = real_styles[rand, ...]
-            mask_label = mask_labels[rand, ...]
-            real_style_lpips_feat = [f[rand, ...] for f in real_style_lpips_feats]
-            self.color_loss.update_slices(real_style_lpips_feat)
+            # mask_label = mask_labels[rand, ...]
 
             ### begin optimize generator ###
             optimizer_G.zero_grad()
@@ -204,12 +202,11 @@ class DomainAdaption():
             syn_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(synth_style, (256, 256)))[
                                    -config.vgg_feature_num:]
 
-            ### aug ##
             rec_style = self.G_target.synthesis_forward(w, **config.synthesis_kwargs)
-            ### aug ##############
             rec_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(rec_style, (256, 256)))[
                                    -config.vgg_feature_num:]
-            rec_style_lpips_feat = [f.detach() for f in rec_style_lpips_feat]
+
+            # rec_style_lpips_feat = [f.detach() for f in rec_style_lpips_feat]
             self.color_loss.update_slices(rec_style_lpips_feat)
             color_loss = self.color_loss(list(syn_style_lpips_feat))
             lapReg = self.clip_loss.VLapR(real_content, synth_content, real_style,
@@ -217,7 +214,6 @@ class DomainAdaption():
             ssim_loss = (1 - self.ssim_loss(common_utils.denorm(rec_style), common_utils.denorm(real_style))).mean()
             lpips_loss = self.lpips_loss(common_utils.resize(rec_style, (256, 256)),
                                          common_utils.resize(real_style, (256, 256))).mean()
-            # dis_rec_loss = sum([F.l1_loss(a, b) for a, b in zip(real_style_dis_feat, rec_style_full_dis_feat)])/len(rec_style_full_dis_feat)
             loss = config.lpips_weight * (
                     lpips_loss + ssim_loss) + config.style_weight * color_loss + config.reg_weight * lapReg
             loss.backward()
@@ -308,8 +304,6 @@ def test_function(config):
                                                           e4e_model = config.e4e_model)
     ws = torch.cat(ws, dim = 0)
     images = torch.cat(images, dim = 0)
-    # ws, _ = domain_adaption.generate_test_latent(domain_adaption.G.mapping.w_avg.repeat(1,domain_adaption.G.num_ws,1), sample_num = 16, linspace_num = 5)
-    # names = [str(i) for i in range(len(ws))]
     source_images = slowly_forward(domain_adaption.G.synthesis, ws, noise_mode = 'const', force_fp32 = True)
     stylized_images = slowly_forward(domain_adaption.G_target.synthesis_forward, ws, **config.synthesis_kwargs)
     for w, source_image, stylized_image, name in zip(ws, source_images, stylized_images, names):
@@ -348,7 +342,7 @@ if __name__ == '__main__':
     parser.add_argument('--index', type = int, default = 8)
     parser.add_argument('--e4e_model', type = str, default = None)
     parser.add_argument('--use_wandb', type = bool, default = False)
-
+    common_utils.seed_all(0)
     opt = parser.parse_args()
     config = vars(opt)
     config = common_utils.EasyDict(**config)
