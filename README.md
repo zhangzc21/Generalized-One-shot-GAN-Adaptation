@@ -9,3 +9,5 @@ We provide some [pre-trained models](https://drive.google.com/drive/folders/1xgB
 - We have prepared the scripts to train new models 
   -  For training model without entities, ```sh scripts/train_OSGA.sh```
   -  For training model with entities, ```sh scripts/train_GOGA.sh```
+  -  For inference, ```sh scripts/inference.sh```
+
