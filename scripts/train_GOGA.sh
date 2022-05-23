@@ -1,6 +1,6 @@
 ############################################
 ##############MUST BE DEFINED###############
-image_path="test_data/references/hat.png" # path to the reference image
+image_path="test_data/references_ent/hat.png" # path to the reference image
 out_dir="Results" # dir to save results
 mask_dir="test_data/masks" # all entity masks should be placed in the mask_dir
 ############################################
@@ -8,7 +8,7 @@ mask_dir="test_data/masks" # all entity masks should be placed in the mask_dir
 test_image_path="test_data/real_images"
 ############################################
 
-python generalized_one_shot_adaption.py --exp_name  test_ \
+python generalized_one_shot_adaption.py --exp_name  test \
 --image_path $image_path \
 --out_dir $out_dir \
 --mask_dir $mask_dir \
@@ -23,7 +23,7 @@ python generalized_one_shot_adaption.py --exp_name  test_ \
 --entity_weight 2 \
 --reg_weight 1 \
 --style_weight 0.2 \
---vgg_feature_num 1 \
+--vgg_feature_num 3 4 \
 --use_mask True \
 --flip_aug True \
 --e4e_model pretrained_models/e4e_ffhq_encode.pt #comment this line if you want to invert image with mask
