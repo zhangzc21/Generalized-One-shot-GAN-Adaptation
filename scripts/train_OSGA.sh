@@ -7,7 +7,7 @@ out_dir="Results" # dir to save results
 test_image_path="test_data/real_images"
 ############################################
 
-python one_shot_style_adaption.py --exp_name test_lap \
+python one_shot_style_adaption.py --exp_name 0522 \
 --image_path $image_path \
 --out_dir $out_dir \
 --test_image_path $test_image_path \
@@ -21,5 +21,5 @@ python one_shot_style_adaption.py --exp_name test_lap \
 --reg_weight 0.5 \
 --lpips_weight 10 \
 --style_weight 2 \
---vgg_feature_num 2 \
+--vgg_feature_num 3 4 \
 --fix_style True \
