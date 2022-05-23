@@ -4,7 +4,7 @@ image_path="test_data/references_ent/hat.png" # path to the reference image
 out_dir="Results" # dir to save results
 mask_dir="test_data/masks" # all entity masks should be placed in the mask_dir
 ############################################
-#############alternative###################
+#############optional###################
 test_image_path="test_data/real_images"
 ############################################
 
