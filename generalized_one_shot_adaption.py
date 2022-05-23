@@ -136,15 +136,15 @@ class DomainAdaption():
         total_step = config.total_step
         zero_tensor = torch.tensor([0.0]).to(device)
         self.w = ws
-        sample_num = 16
+        sample_num = 4
         linspace_num = 5
         w_ref = torch.mean(ws, dim = 0, keepdim = True)
         gan_loss_type = 'vanilla'
         ### END: parameter ##################################
 
         ### BEGIN: Define Generators ##############
-        self.G_source = MaskStyleGAN(copy.deepcopy(self.G), w_ref, index = config.index).to(device)
-        self.G_target = MaskStyleGAN(copy.deepcopy(self.G), w_ref, index = config.index).to(device)
+        self.G_source = MaskStyleGAN(copy.deepcopy(self.G), w_ref, input_res = config.aux_input_res, index = config.index).to(device)
+        self.G_target = MaskStyleGAN(copy.deepcopy(self.G), w_ref, input_res = config.aux_input_res, index = config.index).to(device)
         w_samples, ws_lerp = self.generate_test_latent(w_ref, sample_num, linspace_num)
         cur_step = 0
         if os.path.exists(config.out_dir + '/G_target.pkl'):
@@ -178,11 +178,6 @@ class DomainAdaption():
         self.clip_loss = CLIPLoss(device = device)
         self.ssim_loss = MS_SSIM(window_size = 11, window_sigma = 1.5, data_range = 1.0, channel = 3).to(device)
         self.lpips_loss = lpips.LPIPS(net = 'vgg').to(device).eval()
-        # with torch.no_grad():
-        #     real_style_lpips_feats = self.lpips_loss.get_feature(common_utils.downsample(real_styles, (256, 256)))[
-        #                              -config.vgg_feature_num:]
-        #     real_aux_lpips_feats = self.lpips_loss.get_feature(
-        #         common_utils.downsample(real_styles * mask_labels, (256, 256)))
         self.color_loss = Slicing_torch(num_slice = 256).to(device)
         self.outlier_loss = Slicing_torch(num_slice = 256).to(device)
         ### END: Define Loss ###########################################################################
@@ -216,13 +211,15 @@ class DomainAdaption():
             rec_style_full, rec_style, rec_style_aux, rec_mask = self.G_target.synthesis_aux_forward(w,
                                                                                                   mask_gt = None,
                                                                                                   **config.synthesis_kwargs)
-            rec_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(rec_style, (256, 256)))[
-                                   -config.vgg_feature_num:]
+            rec_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(rec_style, (256, 256)))
+            rec_style_lpips_feat  = [rec_style_lpips_feat [i] for i in config.vgg_feature_num]
+
             rec_aux_lpips_feat = self.lpips_loss.get_feature(
                 common_utils.adaptive_pool(rec_style_aux, (256, 256)))
 
-            syn_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(synth_style, (256, 256)))[
-                                   -config.vgg_feature_num:]
+            syn_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(synth_style, (256, 256)))
+            syn_style_lpips_feat = [syn_style_lpips_feat[i] for i in config.vgg_feature_num]
+
             synth_aux_lpips_feat = self.lpips_loss.get_feature(
                 common_utils.adaptive_pool(synth_style_aux, (256, 256)))
 
@@ -296,10 +293,8 @@ class DomainAdaption():
                         nrow = 4, pad_value = 1.0, padding = 10)
         ### Save image ###
         with torch.no_grad():
-            style_images_lerp = generate_images_slowly(
-                functools.partial(self.G_target.synthesis_forward, mix_style = False),
-                w_samples)
-            common_utils.save_image(style_images_lerp, config.out_dir + f'/random_target.jpg',
+            style_images_lerp,_,_,_ = slowly_forward(self.G_target.synthesis_aux_forward,w_samples, mix_style = False, noise_mode = 'const', force_fp32 = True)
+            common_utils.save_image(style_images_lerp, config.out_dir + f'/wo_stylefix.jpg',
                                     nrow = int(np.sqrt(sample_num)), pad_value = 1.0, padding = 10)
 
     @torch.no_grad()
@@ -388,9 +383,10 @@ if __name__ == '__main__':
     parser.add_argument('--flip_aug', type = bool, default = False)
     parser.add_argument('--use_mask', type = bool, default = False)
     parser.add_argument('--fix_style', type = bool, default = False)
-    parser.add_argument('--vgg_feature_num', type = int, default = 2)
+    parser.add_argument('--vgg_feature_num', nargs="+", type = int, default = [3,4])
     parser.add_argument('--index', type = int, default = 8)
     parser.add_argument('--e4e_model', type = str, default = None)
+    parser.add_argument('--aux_input_res', type = int, default = 32)
     parser.add_argument('--use_wandb', type = bool, default = False)
     common_utils.seed_all(1)
     opt = parser.parse_args()

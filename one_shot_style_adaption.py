@@ -166,11 +166,6 @@ class DomainAdaption():
         self.clip_loss = CLIPLoss(device = device)
         self.ssim_loss = MS_SSIM(window_size = 11, window_sigma = 1.5, data_range = 1.0, channel = 3).to(device)
         self.lpips_loss = lpips.LPIPS(net = 'vgg').to(device).eval()
-        with torch.no_grad():
-            real_style_lpips_feats = self.lpips_loss.get_feature(common_utils.downsample(real_styles, (256, 256)))[
-                                     -config.vgg_feature_num:]
-            real_content_lpips_feats = self.lpips_loss.get_feature(common_utils.downsample(real_contents, (256, 256)))[
-                                       -config.vgg_feature_num:]
         self.color_loss = Slicing_torch(num_slice = 256).to(device)
         ### END: Define Loss ###########################################################################
 
@@ -199,14 +194,13 @@ class DomainAdaption():
 
             synth_style = self.G_target.synthesis_forward(
                 w_, **config.synthesis_kwargs)  # gan lpips_loss #target feature + 1
-            syn_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(synth_style, (256, 256)))[
-                                   -config.vgg_feature_num:]
+            syn_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(synth_style, (256, 256)))
+            syn_style_lpips_feat = [syn_style_lpips_feat[i] for i in config.vgg_feature_num]
 
             rec_style = self.G_target.synthesis_forward(w, **config.synthesis_kwargs)
-            rec_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(rec_style, (256, 256)))[
-                                   -config.vgg_feature_num:]
+            rec_style_lpips_feat = self.lpips_loss.get_feature(common_utils.adaptive_pool(rec_style, (256, 256)))
+            rec_style_lpips_feat = [rec_style_lpips_feat[i] for i in config.vgg_feature_num]
 
-            # rec_style_lpips_feat = [f.detach() for f in rec_style_lpips_feat]
             self.color_loss.update_slices(rec_style_lpips_feat)
             color_loss = self.color_loss(list(syn_style_lpips_feat))
             lapReg = self.clip_loss.VLapR(real_content, synth_content, real_style,
@@ -338,7 +332,7 @@ if __name__ == '__main__':
     parser.add_argument('--flip_aug', type = bool, default = False)
     parser.add_argument('--use_mask', type = bool, default = False)
     parser.add_argument('--fix_style', type = bool, default = False)
-    parser.add_argument('--vgg_feature_num', type = int, default = 2)
+    parser.add_argument('--vgg_feature_num', nargs="+", type = int, default = [3,4])
     parser.add_argument('--index', type = int, default = 8)
     parser.add_argument('--e4e_model', type = str, default = None)
     parser.add_argument('--use_wandb', type = bool, default = False)
