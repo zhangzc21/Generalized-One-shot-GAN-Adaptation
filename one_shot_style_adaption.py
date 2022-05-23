@@ -125,7 +125,7 @@ class DomainAdaption():
         total_step = config.total_step
         zero_tensor = torch.tensor([0.0]).to(device)
         self.w = ws
-        sample_num = 16
+        sample_num = 4
         linspace_num = 5
         w_ref = torch.mean(ws, dim = 0, keepdim = True)
         ### END: parameter ##################################
