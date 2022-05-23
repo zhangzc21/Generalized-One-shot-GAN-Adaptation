@@ -1,6 +1,6 @@
 ############################################
 ##############MUST BE DEFINED###############
-adapted_model='adapted_models/glass.pkl' # path to adapted model
+adapted_model='adapted_models/hat.pkl' # path to adapted model
 ############################################
 ##############optional###################
 test_image='test_data/real_images' # path or dir to the real images that will be inverted by e4e
