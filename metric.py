@@ -10,6 +10,8 @@ def calc_metric(G_source_paths, G_target_paths):
     resize256 = torch.nn.AdaptiveAvgPool2d((256, 256))
     pbar = tqdm(zip(G_source_paths, G_target_paths), total = len(G_target_paths))
 
+    xs_landmarks = np.load(r'D:\One-shot-Adaption-out\metric_results\source_images_landmarks.npy')
+
     array_to_tensor = lambda x: ((torch.from_numpy(x) - 127.5) / 127.5).permute(2,0,1).unsqueeze(0)
 
     lmk_NMEs= []
@@ -44,7 +46,7 @@ if __name__ == '__main__':
     import pickle as pkl
     from models.arcface.id_loss import IDLoss
     import cv2
-    import face_alignment
+    import face_alignment #https://github.com/1adrianb/face-alignment
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_name', type = str, default = r'', help = 'reference image name')
@@ -61,9 +63,10 @@ if __name__ == '__main__':
     if os.path.exists(yaml_path):
         exit()
 
+    ### change here to the dir of source and adapted syntheses ###
     source_domain = [f'{args.source_dir}/{k}.png' for k in range(1000)]
     target_domain = [f'{args.target_dir}/{k}.png' for k in range(1000)]
-
+    #############################################################
     device = torch.device('cuda')
     idloss = IDLoss().to(device)
     idloss.requires_grad = False
