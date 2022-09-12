@@ -16,7 +16,7 @@ We provide some [pre-trained models](https://drive.google.com/drive/folders/1xgB
   -  For inference, ```sh scripts/inference.sh```
 
 ## Note
-This project has not been well cleaned and may contain some redundant files. Please use them sparingly. 
+This project has not been well cleaned and may contain some redundant files. If you have questions about the codes or our paper, please feel free to submit issues or contact with me. 
 
 ## Citation
 ```
