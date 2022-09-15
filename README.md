@@ -1,7 +1,7 @@
 # Generalized One-shot Domain Adaption of Generative Adversarial Networks (NeurIPS 2022)
-
 [![arXiv](https://img.shields.io/badge/arXiv-2209.03665-b31b1b.svg)](https://arxiv.org/abs/2209.03665)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1A6moUzSLh2vU4CckfnXESk4HwYC8NgMz?usp=sharing)
+
 
 ![teaser](teaser/teaser.png "teaser")
 
