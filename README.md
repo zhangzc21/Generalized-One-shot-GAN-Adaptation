@@ -15,7 +15,7 @@ We provide some [pre-trained models](https://drive.google.com/drive/folders/1xgB
   -  For training model with entities, ```sh scripts/train_GOGA.sh```
   -  For inference, ```sh scripts/inference.sh```
 
-## Note
+## Notation
 This project has not been well cleaned and may contain some redundant files. If you have questions about the codes or our paper, feel free to submit issues or contact with me. 
 
 ## Citation
