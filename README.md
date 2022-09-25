@@ -2,7 +2,6 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2209.03665-b31b1b.svg)](https://arxiv.org/abs/2209.03665)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1A6moUzSLh2vU4CckfnXESk4HwYC8NgMz?usp=sharing)
 
-
 ![teaser](teaser/teaser.png "teaser")
 
 ## Quick start
@@ -17,6 +16,8 @@ We provide some [pre-trained models](https://drive.google.com/drive/folders/1xgB
 
 ## Notation
 This project has not been well cleaned and may contain some redundant files. If you have questions about the codes or our paper, feel free to submit issues or contact with me. 
+
+[Supplementary.pdf](https://drive.google.com/file/d/134Quvmf1uyz0Dg5WvoKDBSLWyNAm8rk2/view?usp=sharing) 
 
 ## Citation
 ```
