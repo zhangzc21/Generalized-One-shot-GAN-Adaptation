@@ -17,6 +17,8 @@ We provide some [pre-trained models](https://drive.google.com/drive/folders/1xgB
 ## Notation
 This project has not been well cleaned and may contain some redundant files. If you have questions about the codes or our paper, feel free to submit issues or contact with me. 
 
+This project heavily depends on the code of NVIDIA [StyleGAN v3](https://github.com/NVlabs/stylegan3), hence please follow its [licenses](https://github.com/NVlabs/stylegan3/blob/main/LICENSE.txt).
+
 [Supplementary.pdf](https://drive.google.com/file/d/134Quvmf1uyz0Dg5WvoKDBSLWyNAm8rk2/view?usp=sharing) 
 
 ## Citation
