@@ -1,4 +1,4 @@
-# Generalized One-shot Domain Adaption of Generative Adversarial Networks (NeurIPS 2022)
+# Generalized One-shot Domain Adaptation of Generative Adversarial Networks (NeurIPS 2022)
 [![arXiv](https://img.shields.io/badge/arXiv-2209.03665-b31b1b.svg)](https://arxiv.org/abs/2209.03665)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1A6moUzSLh2vU4CckfnXESk4HwYC8NgMz?usp=sharing)
 
@@ -24,7 +24,7 @@ This project heavily depends on the code of NVIDIA [StyleGAN v3](https://github.
 ## Citation
 ```
 @article{Zhang2022GeneralizedOD,
-  title={Generalized One-shot Domain Adaption of Generative Adversarial Networks},
+  title={Generalized One-shot Domain Adaptation of Generative Adversarial Networks},
   author={Zicheng Zhang and Yinglu Liu and Congying Han and Tiande Guo and Ting Yao and Tao Mei},
   journal={arXiv preprint arXiv:2209.03665},
   year={2022}
