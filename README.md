@@ -23,10 +23,10 @@ This project heavily depends on the code of NVIDIA [StyleGAN v3](https://github.
 
 ## Citation
 ```
-@article{Zhang2022GeneralizedOD,
+@inproceedings{Zhang2022GeneralizedOD,
   title={Generalized One-shot Domain Adaptation of Generative Adversarial Networks},
   author={Zicheng Zhang and Yinglu Liu and Congying Han and Tiande Guo and Ting Yao and Tao Mei},
-  journal={arXiv preprint arXiv:2209.03665},
+  booktitle={NeurIPS},
   year={2022}
 }
 ```
