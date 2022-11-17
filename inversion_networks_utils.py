@@ -35,11 +35,12 @@ def slowly_forward(f, batch, *args, **input_dict):
 
 
 class MaskStyleGAN(nn.Module):
-    def __init__(self, G, ref, index = 8):
+    def __init__(self, G, ref, index = 8, input_res = 32):
         super(MaskStyleGAN, self).__init__()
         self.synthesis = G.synthesis
         self.mapping = G.mapping
-        self.aux = my_blocks.UNet__(512, 512 + 1, input_res = 32, output_res = 256, n=3, fix_channel = 64)  # Auxiliaries(n_classes = 4)
+        channels_dict = {res: min(32768 // res, 512) for res in self.synthesis.block_resolutions}
+        self.aux = my_blocks.UNet__(channels_dict[input_res], channels_dict[input_res] + 1, input_res = input_res, output_res = 256, n=3, fix_channel = 64)  # Auxiliaries(n_classes = 4)
         self.register_buffer('style', ref)
         self.index = index
         self.num_ws = G.num_ws
@@ -108,7 +109,7 @@ class MaskStyleGAN(nn.Module):
             if int(res) == self.aux.input_res:
                 t_feature, t_mask = self.aux(x)
                 if mask_gt is not None:
-                    t_mask_ = common_utils.resize(mask_gt, t_feature.shape[-2:])
+                    t_mask_ = common_utils.resize(mask_gt, t_feature.shape[-2:])[:,:1,...]
                 else:
                     t_mask_ = common_utils.resize(t_mask, t_feature.shape[-2:])
                 x = x + (t_feature - x) * t_mask_.expand_as(x)
@@ -124,12 +125,12 @@ class MaskStyleGAN(nn.Module):
             x, img = block(x, img, cur_ws, **kwargs)
 
         mask = common_utils.resize(t_mask, (img.shape[-2], img.shape[-1]))
-        add_img = img_ * mask
+        entity = img_ * mask
 
         if return_feature is not None:
-            return img_, img, add_img, mask, feat
+            return img_, img, entity, mask, feat
         else:
-            return img_, img, add_img, mask
+            return img_, img, entity, mask
 
     def synthesis_forward_slowly(self, w_samples, **synthesis_kwargs):
         return slowly_forward(self.synthesis_forward, w_samples, **synthesis_kwargs)
@@ -277,4 +278,87 @@ class Slicing_torch(torch.nn.Module):
             cur_l = self.compute_proj(l, idx, 1)
             loss += F.mse_loss(cur_l, self.target[idx].expand(cur_l.size(0), -1))
         loss /= len(input)
+        return loss
+
+
+
+def gram_matrix(feature_maps, center=False):
+    """
+    feature_maps: b, c, h, w
+    gram_matrix: b, c, c
+    """
+    b, c, h, w = feature_maps.size()
+    features = feature_maps.view(b, c, h * w)
+    if center:
+        features = features - features.mean(dim=-1, keepdims=True)
+    G = torch.bmm(features, torch.transpose(features, 1, 2))
+    return G
+
+
+class Gram_style(torch.nn.Module):
+    def __init__(self):
+        super(Gram_style, self).__init__()
+        pass
+
+    def update_slices(self, layers):
+        self.target = layers
+
+    def forward(self, input, target = None):
+        loss = 0.0
+        if target is None:
+            target = self.target
+        # output = []
+        for a, b in zip(input, target):
+            loss += torch.mean((gram_matrix(a) - gram_matrix(b)) ** 2)
+        loss = loss / len(input)
+        return loss
+
+
+class RMSELoss(nn.Module):
+    def __init__(self, eps=0):
+        super().__init__()
+        self.mse = nn.MSELoss(reduction="sum")
+        self.eps = eps
+
+    def forward(self, yhat, y):
+        loss = torch.sqrt(self.mse(yhat, y) + self.eps)
+        return loss
+
+
+class content_loss(nn.Module):
+    def __init__(self):
+        super(content_loss, self).__init__()
+
+    def forward(self, x_feats, y_feats):
+        loss = 0
+        for x_feat, y_feat in zip(x_feats, y_feats):
+            loss += F.mse_loss(x_feat, y_feat)
+        return loss / len(x_feats)
+
+
+
+class Moment_Style(nn.Module):
+    def __init__(self,  axis=(0, 2, 3), k=5, weights=(1, 1, 1, 1, 1)):
+        super(Moment_Style, self).__init__()
+        assert k == len(weights)
+        self.k = k
+        self.weights = weights
+        self.axis = axis
+        self.rmse = RMSELoss()
+
+    def update_targets(self, target):
+        self.target = target
+        c1_y = self.target.mean(dim=self.axis).view(1, -1, 1, 1)
+        m_ys = list()
+        for i in range(2, self.k + 1):
+            # watch out: zeroth element is pow 2, first is pow 3...
+            m_ys.append((self.target - c1_y).pow(i).mean(dim=self.axis))
+        self.c1_y, self.m_ys = c1_y, m_ys
+
+    def __call__(self, x):
+        c1_x = x.mean(dim=self.axis).view(1, -1, 1, 1)
+        loss = self.weights[0] * self.rmse(c1_x, self.c1_y)
+        for i in range(2, self.k + 1):
+            m_x = (x - c1_x).pow(i).mean(dim=self.axis)
+            loss = loss + self.weights[i - 1] * self.rmse(m_x, self.m_ys[i - 2])
         return loss
